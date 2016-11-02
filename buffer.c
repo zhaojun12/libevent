@@ -1715,6 +1715,50 @@ done:
 	return result;
 }
 
+char *
+evbuffer_readframe(struct evbuffer *buffer, size_t *n_read_out)
+{
+	char *frame;
+	char *result = NULL;
+	size_t buffer_len;
+	ev_uint32_t frame_len;
+
+	EVBUFFER_LOCK(buffer);
+
+	if (buffer->freeze_start) {
+		goto done;
+	}
+
+	buffer_len = evbuffer_get_length(buffer);
+	if (buffer_len < 4) {
+		event_warn("%s: frame is not received completely", __func__);
+		goto done;
+	}
+
+	evbuffer_copyout(buffer, &frame_len, 4);
+	frame_len = ntohl(frame_len);
+	if (buffer_len < frame_len + 4) {
+		event_warn("%s: frame is not received completely", __func__);
+		goto done;
+	}
+
+	if ((frame = mm_malloc(frame_len)) == NULL) {
+		event_warn("%s: out of memory", __func__);
+		goto done;
+	}
+
+	evbuffer_drain(buffer, 4);
+	evbuffer_remove(buffer, frame, frame_len);
+	result = frame;
+done:
+	EVBUFFER_UNLOCK(buffer);
+
+	if (n_read_out)
+		*n_read_out = result ? frame_len : 0;
+
+	return result;
+}
+
 #define EVBUFFER_CHAIN_MAX_AUTO_SIZE 4096
 
 /* Adds data to an event buffer */

@@ -439,6 +439,22 @@ char *evbuffer_readln(struct evbuffer *buffer, size_t *n_read_out,
     enum evbuffer_eol_style eol_style);
 
 /**
+ * Read a single frame from an evbuffer.
+ *
+ * Reads a frame with a specified length field with four bytes
+ * followed by data field. The length field only represents the number
+ * of bytes of the data field.  Returns a newly allocated string; the caller
+ * must free the returned value.
+ *
+ * @param buffer the evbuffer to read from
+ * @param n_read_out if non-NULL, points to a size_t that is set to the
+ *       number of characters in the returned string.  This is useful for
+ *       strings that can contain NUL characters.
+ * @return pointer to a single line, or NULL if an error occurred
+ */
+char *evbuffer_readframe(struct evbuffer *buffer, size_t *n_read_out);
+
+/**
   Move all data from one evbuffer into another evbuffer.
 
   This is a destructive add.  The data from one buffer moves into
